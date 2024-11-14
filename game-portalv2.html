@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Portal de Juegos</title>
+    <style>
+        :root {
+            --primary-color: #7e57c2;
+            --hover-color: #5e35b1;
+            --background-color: #1a1a2e;
+            --card-color: #262645;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: var(--background-color);
+            color: white;
+            min-height: 100vh;
+        }
+
+        header {
+            background-color: var(--primary-color);
+            padding: 1rem;
+            text-align: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .search-container {
+            max-width: 600px;
+            margin: 2rem auto;
+            padding: 0 1rem;
+        }
+
+        #searchInput {
+            width: 100%;
+            padding: 0.8rem;
+            border: none;
+            border-radius: 25px;
+            background-color: rgba(255,255,255,0.1);
+            color: white;
+            font-size: 1rem;
+        }
+
+        #searchInput::placeholder {
+            color: rgba(255,255,255,0.7);
+        }
+
+        .games-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 2rem;
+            padding: 2rem;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .game-card {
+            background-color: var(--card-color);
+            border-radius: 15px;
+            overflow: hidden;
+            transition: transform 0.3s ease;
+            cursor: pointer;
+        }
+
+        .game-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .game-image {
+            width: 100%;
+            height: 200px;
+            background-color: #363663;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .game-image img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .game-info {
+            padding: 1rem;
+        }
+
+        .game-title {
+            font-size: 1.2rem;
+            margin-bottom: 0.5rem;
+            color: white;
+        }
+
+        .game-description {
+            font-size: 0.9rem;
+            color: rgba(255,255,255,0.7);
+            margin-bottom: 1rem;
+        }
+
+        .play-button {
+            display: inline-block;
+            padding: 0.5rem 1.5rem;
+            background-color: var(--primary-color);
+            color: white;
+            text-decoration: none;
+            border-radius: 20px;
+            transition: background-color 0.3s ease;
+        }
+
+        .play-button:hover {
+            background-color: var(--hover-color);
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>🎮 Portal de Juegos</h1>
+        <p>¡Juega los mejores juegos en línea!</p>
+    </header>
+
+    <div class="search-container">
+        <input type="text" id="searchInput" placeholder="Buscar juegos...">
+    </div>
+
+    <div class="games-container" id="gamesContainer">
+        <!-- Los juegos se agregarán dinámicamente aquí -->
+    </div>
+
+    <script>
+        // Lista de juegos (puedes agregar más según necesites)
+        const games = [
+            {
+                id: 'tictactoe',
+                title: 'Tic Tac Toe',
+                description: 'El clásico juego de tres en raya',
+                image: '/api/placeholder/250/200',
+                path: '/games/tictactoe/index.html'
+            },
+            {
+                id: 'snake',
+                title: 'Snake',
+                description: 'El famoso juego de la serpiente',
+                image: '/api/placeholder/250/200',
+                path: '/games/snake/index.html'
+            },
+            {
+                id: 'tetris',
+                title: 'Tetris',
+                description: 'El legendario juego de bloques',
+                image: '/api/placeholder/250/200',
+                path: '/games/tetris/index.html'
+            }
+        ];
+
+        // Función para crear las tarjetas de juegos
+        function createGameCard(game) {
+            return `
+                <div class="game-card">
+                    <div class="game-image">
+                        <img src="${game.image}" alt="${game.title}">
+                    </div>
+                    <div class="game-info">
+                        <h3 class="game-title">${game.title}</h3>
+                        <p class="game-description">${game.description}</p>
+                        <a href="${game.path}" class="play-button">Jugar</a>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Función para mostrar los juegos
+        function displayGames(gamesArray) {
+            const gamesContainer = document.getElementById('gamesContainer');
+            gamesContainer.innerHTML = gamesArray
+                .map(game => createGameCard(game))
+                .join('');
+        }
+
+        // Función para filtrar juegos
+        function filterGames(searchTerm) {
+            return games.filter(game => 
+                game.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                game.description.toLowerCase().includes(searchTerm.toLowerCase())
+            );
+        }
+
+        // Evento de búsqueda
+        document.getElementById('searchInput').addEventListener('input', (e) => {
+            const filteredGames = filterGames(e.target.value);
+            displayGames(filteredGames);
+        });
+
+        // Mostrar todos los juegos al cargar la página
+        displayGames(games);
+    </script>
+</body>
+</html>
