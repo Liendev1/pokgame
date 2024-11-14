@@ -1,0 +1,24 @@
+{
+  "name": "DinoJump",
+  "short_name": "DinoJump",
+  "id": "com.example.gamename",
+  "description": "Divertido juego de Disaurio ¡salta!",
+  "orientation": "landscape",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "black",
+  "categories": ["games", "entertainment"],
+  "icons": [{
+        "src": "Dino Vita_Idle_1.png",
+        "sizes": "96x96"
+      },{
+        "src": "Dino Vita_Idle_1.png",
+        "sizes": "144x144"
+      },{
+        "src": "Dino Vita_Idle_1.png",
+        "sizes": "192x192"
+      },{
+        "src": "Dino Vita_Idle_1.png",
+        "sizes": "512x512"
+      }]
+}
