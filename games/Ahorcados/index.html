@@ -1,0 +1,223 @@
+<html><head><base href="." /><title>Juego del Ahorcado</title>
+<style>
+body {
+    font-family: Arial, sans-serif;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    background: #f0f0f0;
+}
+
+.hangman-container {
+    display: flex;
+    gap: 40px;
+    margin: 20px;
+}
+
+.drawing {
+    width: 200px;
+    height: 250px;
+    border: 2px solid #333;
+    position: relative;
+}
+
+.word-container {
+    display: flex;
+    gap: 10px;
+    margin: 20px;
+}
+
+.letter-box {
+    width: 30px;
+    height: 40px;
+    border-bottom: 3px solid #333;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 24px;
+}
+
+.keyboard {
+    display: grid;
+    grid-template-columns: repeat(9, 1fr);
+    gap: 5px;
+    max-width: 500px;
+}
+
+.key {
+    padding: 10px;
+    background: #fff;
+    border: 1px solid #333;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.key:hover {
+    background: #ddd;
+}
+
+.key.used {
+    background: #ccc;
+    cursor: not-allowed;
+}
+
+#message {
+    margin: 20px;
+    font-size: 24px;
+    font-weight: bold;
+}
+
+.play-again {
+    padding: 10px 20px;
+    font-size: 18px;
+    background: #4CAF50;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    margin: 10px;
+    transition: background 0.3s;
+}
+
+.play-again:hover {
+    background: #45a049;
+}
+</style>
+</head>
+<body>
+    <h1>Juego del Ahorcado</h1>
+    <div class="hangman-container">
+        <svg class="drawing" viewBox="0 0 200 250">
+            <!-- Base -->
+            <line x1="40" y1="230" x2="160" y2="230" stroke="#333" stroke-width="4"/>
+            <!-- Poste vertical -->
+            <line x1="60" y1="230" x2="60" y2="30" stroke="#333" stroke-width="4" id="post1" opacity="0"/>
+            <!-- Poste horizontal -->
+            <line x1="60" y1="30" x2="140" y2="30" stroke="#333" stroke-width="4" id="post2" opacity="0"/>
+            <!-- Cuerda -->
+            <line x1="140" y1="30" x2="140" y2="60" stroke="#333" stroke-width="4" id="rope" opacity="0"/>
+            <!-- Cabeza -->
+            <circle cx="140" cy="80" r="20" stroke="#333" stroke-width="4" fill="none" id="head" opacity="0"/>
+            <!-- Cuerpo -->
+            <line x1="140" y1="100" x2="140" y2="150" stroke="#333" stroke-width="4" id="body" opacity="0"/>
+            <!-- Brazo izquierdo -->
+            <line x1="140" y1="120" x2="110" y2="140" stroke="#333" stroke-width="4" id="leftArm" opacity="0"/>
+            <!-- Brazo derecho -->
+            <line x1="140" y1="120" x2="170" y2="140" stroke="#333" stroke-width="4" id="rightArm" opacity="0"/>
+            <!-- Pierna izquierda -->
+            <line x1="140" y1="150" x2="110" y2="180" stroke="#333" stroke-width="4" id="leftLeg" opacity="0"/>
+            <!-- Pierna derecha -->
+            <line x1="140" y1="150" x2="170" y2="180" stroke="#333" stroke-width="4" id="rightLeg" opacity="0"/>
+        </svg>
+    </div>
+    <div class="word-container" id="wordContainer"></div>
+    <div class="keyboard" id="keyboard"></div>
+    <div id="message"></div>
+    <button class="play-again" id="playAgain" style="display: none;">Jugar de nuevo</button>
+
+<script>
+const words = ['JAVASCRIPT', 'PYTHON', 'PROGRAMACION', 'DESARROLLO', 'COMPUTADORA', 'TECNOLOGIA', 'INTERNET', 'CODIGO', 'VARIABLE', 'FUNCION'];
+let word = '';
+let guessedLetters = [];
+let remainingTries = 10;
+const hangmanParts = [
+    'post1', 'post2', 'rope', 'head', 'body', 'leftArm', 'rightArm', 'leftLeg', 'rightLeg'
+];
+
+function initGame() {
+    word = words[Math.floor(Math.random() * words.length)];
+    guessedLetters = [];
+    remainingTries = 10;
+    document.getElementById('message').textContent = '';
+    document.getElementById('playAgain').style.display = 'none';
+    createKeyboard();
+    updateWordDisplay();
+    resetHangman();
+}
+
+function resetHangman() {
+    hangmanParts.forEach(part => {
+        document.getElementById(part).setAttribute('opacity', '0');
+    });
+}
+
+function createKeyboard() {
+    const keyboard = document.getElementById('keyboard');
+    keyboard.innerHTML = '';
+    for (let i = 65; i <= 90; i++) {
+        const letter = String.fromCharCode(i);
+        const button = document.createElement('button');
+        button.textContent = letter;
+        button.className = 'key';
+        button.addEventListener('click', () => guessLetter(letter));
+        keyboard.appendChild(button);
+    }
+}
+
+function updateWordDisplay() {
+    const wordContainer = document.getElementById('wordContainer');
+    wordContainer.innerHTML = '';
+    word.split('').forEach(letter => {
+        const div = document.createElement('div');
+        div.className = 'letter-box';
+        div.textContent = guessedLetters.includes(letter) ? letter : '';
+        wordContainer.appendChild(div);
+    });
+}
+
+function updateHangman() {
+    const wrongGuesses = guessedLetters.filter(letter => !word.includes(letter)).length;
+    for (let i = 0; i < wrongGuesses; i++) {
+        if (hangmanParts[i]) {
+            document.getElementById(hangmanParts[i]).setAttribute('opacity', '1');
+        }
+    }
+}
+
+function guessLetter(letter) {
+    if (guessedLetters.includes(letter)) return;
+    
+    guessedLetters.push(letter);
+    const button = [...document.getElementsByClassName('key')].find(btn => btn.textContent === letter);
+    button.classList.add('used');
+    
+    updateWordDisplay();
+    updateHangman();
+    
+    // Verificar victoria
+    const hasWon = word.split('').every(letter => guessedLetters.includes(letter));
+    if (hasWon) {
+        document.getElementById('message').textContent = '¡Ganaste! 🎉';
+        showPlayAgainButton();
+        return;
+    }
+    
+    // Verificar derrota
+    const wrongGuesses = guessedLetters.filter(letter => !word.includes(letter)).length;
+    if (wrongGuesses >= 9) {
+        document.getElementById('message').textContent = '¡Perdiste! La palabra era: ' + word;
+        showPlayAgainButton();
+    }
+}
+
+function disableKeyboard() {
+    const keys = document.getElementsByClassName('key');
+    [...keys].forEach(key => {
+        key.classList.add('used');
+        key.disabled = true;
+    });
+}
+
+function showPlayAgainButton() {
+    const playAgainButton = document.getElementById('playAgain');
+    playAgainButton.style.display = 'block';
+    disableKeyboard();
+}
+
+// Event listener para el botón de jugar de nuevo
+document.getElementById('playAgain').addEventListener('click', initGame);
+
+// Iniciar el juego
+initGame();
+</script>
+</body></html>
