@@ -1,0 +1,309 @@
+<html><head><base href=".">
+<style>
+  body {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    margin: 0;
+    background: linear-gradient(135deg, #1a1a1a 0%, #2a2a2a 100%);
+    font-family: Arial, sans-serif;
+    color: white;
+  }
+
+  .puzzle-container {
+    position: relative;
+    width: 600px;
+    height: 400px;
+    border: 3px solid #444;
+    margin: 20px;
+    background: rgba(255,255,255,0.1);
+  }
+
+  .puzzle-piece {
+    position: absolute;
+    border: 2px solid #666;
+    transition: transform 0.3s ease;
+    cursor: pointer;
+    user-select: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .puzzle-piece:hover {
+    transform: scale(1.02);
+    box-shadow: 0 0 15px rgba(255,255,255,0.4);
+    z-index: 100;
+  }
+
+  .controls {
+    margin: 20px;
+  }
+
+  button {
+    padding: 10px 20px;
+    margin: 0 10px;
+    font-size: 16px;
+    background: #444;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+  }
+
+  button:hover {
+    background: #666;
+    transform: translateY(-2px);
+  }
+
+  button:active {
+    transform: translateY(1px);
+  }
+
+  #imageInput {
+    display: none;
+  }
+
+  .upload-btn {
+    background: #4CAF50;
+  }
+
+  .upload-btn:hover {
+    background: #45a049;
+  }
+
+  .message {
+    position: fixed;
+    top: 20px;
+    background: rgba(0,0,0,0.8);
+    padding: 10px 20px;
+    border-radius: 5px;
+    display: none;
+    animation: fadeInOut 2s ease;
+  }
+
+  @keyframes fadeInOut {
+    0% { opacity: 0; transform: translateY(-20px); }
+    20% { opacity: 1; transform: translateY(0); }
+    80% { opacity: 1; transform: translateY(0); }
+    100% { opacity: 0; transform: translateY(-20px); }
+  }
+
+  .helper-text {
+    margin-top: 10px;
+    color: #aaa;
+    font-size: 14px;
+    text-align: center;
+  }
+</style>
+</head>
+<body>
+  <h1>Rompecabezas Interactivo</h1>
+  <div class="puzzle-container" id="puzzleContainer"></div>
+  <div class="controls">
+    <button onclick="loadNextImage()">Cargar Siguiente Imagen</button>
+    <button onclick="shufflePieces()">Mezclar Piezas</button>
+    <button onclick="checkWin()">Verificar Solución</button>
+  </div>
+  <div class="helper-text">
+    Selecciona una pieza y luego otra para intercambiarlas. Solo puedes intercambiar con piezas adyacentes.
+  </div>
+  <div class="message" id="message"></div>
+
+<script>
+const PUZZLE_ROWS = 3;
+const PUZZLE_COLS = 3;
+let pieces = [];
+let originalPositions = [];
+let currentImage = null;
+let selectedPiece = null;
+let currentImageIndex = 1;
+
+// Load first image when page loads
+window.onload = () => loadImage(currentImageIndex);
+
+function loadImage(index) {
+  const img = new Image();
+  img.onload = function() {
+    currentImage = img;
+    createPuzzlePieces();
+  }
+  img.onerror = function() {
+    showMessage('No se encontró la imagen', 'error');
+  }
+  img.src = `file:///C:/Users/Neil/Desktop/fotos/fotos/image${index}.png`;
+}
+
+function loadNextImage() {
+  currentImageIndex++;
+  loadImage(currentImageIndex);
+}
+
+function showMessage(text, type = 'success') {
+  const message = document.getElementById('message');
+  message.style.display = 'block';
+  message.textContent = text;
+  message.style.backgroundColor = type === 'success' ? 'rgba(76, 175, 80, 0.8)' : 'rgba(244, 67, 54, 0.8)';
+  setTimeout(() => {
+    message.style.display = 'none';
+  }, 2000);
+}
+
+function createPuzzlePieces() {
+  const container = document.getElementById('puzzleContainer');
+  container.innerHTML = '';
+  pieces = [];
+  
+  const pieceWidth = container.offsetWidth / PUZZLE_COLS;
+  const pieceHeight = container.offsetHeight / PUZZLE_ROWS;
+
+  for(let y = 0; y < PUZZLE_ROWS; y++) {
+    for(let x = 0; x < PUZZLE_COLS; x++) {
+      const piece = document.createElement('div');
+      piece.className = 'puzzle-piece';
+      piece.style.width = pieceWidth + 'px';
+      piece.style.height = pieceHeight + 'px';
+      piece.style.backgroundImage = `url(${currentImage.src})`;
+      piece.style.backgroundSize = `${container.offsetWidth}px ${container.offsetHeight}px`;
+      piece.style.backgroundPosition = `-${x * pieceWidth}px -${y * pieceHeight}px`;
+      piece.style.left = x * pieceWidth + 'px';
+      piece.style.top = y * pieceHeight + 'px';
+      
+      piece.setAttribute('data-original-x', x * pieceWidth);
+      piece.setAttribute('data-original-y', y * pieceHeight);
+      
+      piece.addEventListener('click', () => handlePieceClick(piece));
+      container.appendChild(piece);
+      pieces.push(piece);
+    }
+  }
+  
+  originalPositions = pieces.map(piece => ({
+    x: parseInt(piece.getAttribute('data-original-x')),
+    y: parseInt(piece.getAttribute('data-original-y'))
+  }));
+  
+  shufflePieces();
+}
+
+function handlePieceClick(piece) {
+  if (!selectedPiece) {
+    selectedPiece = piece;
+    piece.style.border = '2px solid yellow';
+  } else {
+    if (selectedPiece === piece) {
+      selectedPiece.style.border = '2px solid #666';
+      selectedPiece = null;
+    } else {
+      const piece1Col = Math.round(parseInt(selectedPiece.style.left) / (piece.offsetWidth));
+      const piece1Row = Math.round(parseInt(selectedPiece.style.top) / (piece.offsetHeight));
+      const piece2Col = Math.round(parseInt(piece.style.left) / (piece.offsetWidth));
+      const piece2Row = Math.round(parseInt(piece.style.top) / (piece.offsetHeight));
+
+      const isAdjacent = (
+        (Math.abs(piece2Col - piece1Col) === 1 && piece2Row === piece1Row) || 
+        (Math.abs(piece2Row - piece1Row) === 1 && piece2Col === piece1Col)
+      );
+
+      if (isAdjacent) {
+        swapPieces(selectedPiece, piece);
+      }
+      
+      selectedPiece.style.border = '2px solid #666';
+      selectedPiece = null;
+    }
+  }
+}
+
+function findEmptyPosition() {
+  const container = document.getElementById('puzzleContainer');
+  const pieceWidth = container.offsetWidth / PUZZLE_COLS;
+  const pieceHeight = container.offsetHeight / PUZZLE_ROWS;
+  
+  const positions = [];
+  for(let row = 0; row < PUZZLE_ROWS; row++) {
+    for(let col = 0; col < PUZZLE_COLS; col++) {
+      positions.push({
+        left: col * pieceWidth,
+        top: row * pieceHeight
+      });
+    }
+  }
+  
+  const emptyPositions = positions.filter(pos => {
+    return !pieces.some(piece => {
+      const pieceLeft = parseInt(piece.style.left);
+      const pieceTop = parseInt(piece.style.top);
+      return Math.abs(pieceLeft - pos.left) < 5 && Math.abs(pieceTop - pos.top) < 5;
+    });
+  });
+  
+  if (emptyPositions.length > 0) {
+    return emptyPositions[0];
+  }
+  return null;
+}
+
+function swapPieces(piece1, piece2) {
+  const tempLeft = piece1.style.left;
+  const tempTop = piece1.style.top;
+  
+  piece1.style.left = piece2.style.left;
+  piece1.style.top = piece2.style.top;
+  
+  const emptyPos = findEmptyPosition();
+  if (emptyPos) {
+    piece2.style.left = emptyPos.left + 'px';
+    piece2.style.top = emptyPos.top + 'px';
+  } else {
+    piece2.style.left = tempLeft;
+    piece2.style.top = tempTop;
+  }
+}
+
+function shufflePieces() {
+  const container = document.getElementById('puzzleContainer');
+  const positions = pieces.map((_, index) => index);
+  
+  for (let i = positions.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [positions[i], positions[j]] = [positions[j], positions[i]];
+  }
+  
+  pieces.forEach((piece, index) => {
+    const x = positions[index] % PUZZLE_COLS;
+    const y = Math.floor(positions[index] / PUZZLE_COLS);
+    piece.style.left = (x * container.offsetWidth / PUZZLE_COLS) + 'px';
+    piece.style.top = (y * container.offsetHeight / PUZZLE_ROWS) + 'px';
+  });
+}
+
+function checkWin() {
+  const tolerance = 5;
+  const isCorrect = pieces.every(piece => {
+    const currentX = parseInt(piece.style.left);
+    const currentY = parseInt(piece.style.top);
+    const originalX = parseInt(piece.getAttribute('data-original-x'));
+    const originalY = parseInt(piece.getAttribute('data-original-y'));
+    
+    return Math.abs(currentX - originalX) <= tolerance && 
+           Math.abs(currentY - originalY) <= tolerance;
+  });
+
+  if (isCorrect) {
+    showMessage('¡Felicitaciones! ¡Has completado el rompecabezas!');
+    pieces.forEach(piece => {
+      piece.style.border = '2px solid #4CAF50';
+      piece.style.boxShadow = '0 0 10px rgba(76, 175, 80, 0.5)';
+    });
+    setTimeout(() => {
+      loadNextImage();
+    }, 2000);
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,242 @@
+<html><head><base href="." />
+<meta charset="UTF-8" />
+<title>Neon Emoji Connect Game</title>
+<style>
+    body {
+        margin: 0;
+        min-height: 100vh;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        background: #000;
+        font-family: Arial, sans-serif;
+    }
+
+    .game-container {
+        position: relative;
+        width: 600px;
+        height: 600px;
+        background: rgba(20, 20, 20, 0.8);
+        border-radius: 15px;
+        box-shadow: 0 0 20px rgba(0, 255, 255, 0.3);
+        padding: 20px;
+    }
+
+    .emoji {
+        position: absolute;
+        font-size: 2.5em;
+        cursor: pointer;
+        transition: transform 0.2s;
+        filter: drop-shadow(0 0 10px rgba(0, 255, 255, 0.5));
+    }
+
+    .emoji:hover {
+        transform: scale(1.2);
+    }
+
+    canvas {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        pointer-events: none;
+    }
+
+    .score {
+        position: absolute;
+        top: -40px;
+        left: 50%;
+        transform: translateX(-50%);
+        color: #0ff;
+        font-size: 1.5em;
+        text-shadow: 0 0 10px #0ff;
+    }
+
+    .level {
+        position: absolute;
+        top: -40px;
+        right: 20px;
+        color: #0ff;
+        font-size: 1.5em;
+        text-shadow: 0 0 10px #0ff;
+    }
+
+    .win-message {
+        display: none;
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        color: #0ff;
+        font-size: 2em;
+        text-shadow: 0 0 10px #0ff;
+        text-align: center;
+        background: rgba(0,0,0,0.8);
+        padding: 20px;
+        border-radius: 10px;
+    }
+</style>
+</head><body>
+<div class="game-container">
+    <div class="score">Puntos: <span id="score">0</span></div>
+    <div class="level">Nivel: <span id="level">1</span></div>
+    <canvas id="canvas"></canvas>
+    <div class="win-message" id="winMessage"></div>
+</div>
+
+<script>
+const baseEmojis = ['🌟', '🌈', '🦄', '🎨', '🌺', '💖', '🎭', '🎪', '🎯', '🎲', '🎳', '🎼', '🎸', '🎹', '🎺', 
+                    '🎷', '🎨', '🎭', '🎪', '🎯', '🎲', '🎳', '🎼', '🎸', '🎹', '🎺', '🎷', '🎨', '🎭', '🎪'];
+let currentLevel = 1;
+let selectedEmoji = null;
+let pairs = [];
+let score = 0;
+let canPlay = true;
+let currentEmojis = [];
+
+const gameContainer = document.querySelector('.game-container');
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+const scoreElement = document.getElementById('score');
+const levelElement = document.getElementById('level');
+const winMessage = document.getElementById('winMessage');
+
+canvas.width = gameContainer.offsetWidth;
+canvas.height = gameContainer.offsetHeight;
+
+function getGridPosition(index, total) {
+    const cols = Math.ceil(Math.sqrt(total));
+    const rows = Math.ceil(total / cols);
+    const cellWidth = (gameContainer.offsetWidth - 60) / cols;
+    const cellHeight = (gameContainer.offsetHeight - 60) / rows;
+    
+    const row = Math.floor(index / cols);
+    const col = index % cols;
+    
+    return {
+        x: 30 + col * cellWidth + (Math.random() * 20 - 10),
+        y: 30 + row * cellHeight + (Math.random() * 20 - 10)
+    };
+}
+
+function startLevel(level) {
+    clearCanvas();
+    pairs = [];
+    selectedEmoji = null;
+    canPlay = true;
+    
+    // Remove existing emojis
+    document.querySelectorAll('.emoji').forEach(el => el.remove());
+    
+    // Calculate number of pairs for this level
+    const pairsCount = Math.min(3 + level, 30);
+    currentEmojis = baseEmojis.slice(0, pairsCount);
+    
+    // Create shuffled pairs
+    const shuffledEmojis = [...currentEmojis, ...currentEmojis].sort(() => Math.random() - 0.5);
+    
+    shuffledEmojis.forEach((emoji, index) => {
+        const div = document.createElement('div');
+        div.className = 'emoji';
+        div.textContent = emoji;
+        const position = getGridPosition(index, shuffledEmojis.length);
+        div.style.left = `${position.x}px`;
+        div.style.top = `${position.y}px`;
+        div.dataset.index = index;
+        gameContainer.appendChild(div);
+    });
+    
+    levelElement.textContent = level;
+}
+
+function drawLine(x1, y1, x2, y2) {
+    ctx.beginPath();
+    ctx.moveTo(x1, y1);
+    ctx.lineTo(x2, y2);
+    ctx.strokeStyle = '#0ff';
+    ctx.lineWidth = 3;
+    ctx.shadowBlur = 10;
+    ctx.shadowColor = '#0ff';
+    ctx.stroke();
+}
+
+function clearCanvas() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+}
+
+function drawExistingLines() {
+    pairs.forEach(pair => {
+        const [emoji1, emoji2] = pair;
+        const rect1 = emoji1.getBoundingClientRect();
+        const rect2 = emoji2.getBoundingClientRect();
+        const containerRect = gameContainer.getBoundingClientRect();
+        
+        drawLine(
+            rect1.left - containerRect.left + rect1.width/2,
+            rect1.top - containerRect.top + rect1.height/2,
+            rect2.left - containerRect.left + rect2.width/2,
+            rect2.top - containerRect.top + rect2.height/2
+        );
+    });
+}
+
+gameContainer.addEventListener('click', (e) => {
+    if (!canPlay) return;
+    
+    if (e.target.classList.contains('emoji')) {
+        if (!selectedEmoji) {
+            selectedEmoji = e.target;
+            selectedEmoji.style.transform = 'scale(1.2)';
+        } else {
+            const currentEmoji = e.target;
+            
+            if (selectedEmoji === currentEmoji) {
+                selectedEmoji.style.transform = '';
+                selectedEmoji = null;
+                return;
+            }
+            
+            if (selectedEmoji.textContent === currentEmoji.textContent &&
+                !pairs.some(pair => pair.includes(selectedEmoji) || pair.includes(currentEmoji))) {
+                pairs.push([selectedEmoji, currentEmoji]);
+                score += 10;
+                scoreElement.textContent = score;
+                
+                clearCanvas();
+                drawExistingLines();
+                
+                if (pairs.length === currentEmojis.length) {
+                    canPlay = false;
+                    if (currentLevel < 30) {
+                        winMessage.textContent = `¡Nivel ${currentLevel} Completado! 🎉\nClick para continuar`;
+                        winMessage.style.display = 'block';
+                        winMessage.onclick = () => {
+                            currentLevel++;
+                            winMessage.style.display = 'none';
+                            startLevel(currentLevel);
+                        };
+                    } else {
+                        winMessage.textContent = '¡Felicidades! ¡Has completado todos los niveles! 🏆';
+                        winMessage.style.display = 'block';
+                    }
+                }
+            }
+            
+            selectedEmoji.style.transform = '';
+            selectedEmoji = null;
+        }
+    }
+});
+
+// Efecto de brillo para las líneas
+setInterval(() => {
+    clearCanvas();
+    ctx.shadowBlur = 5 + Math.random() * 5;
+    drawExistingLines();
+}, 100);
+
+// Iniciar el primer nivel
+startLevel(currentLevel);
+</script>
+</body></html>
